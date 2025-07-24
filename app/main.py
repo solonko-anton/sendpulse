@@ -30,7 +30,7 @@ def add_to_addressbook(email: str, plan: str):
     response = SPApiProxy.add_emails_to_addressbook(addressbook_id, [variables])
     if not response.get("result", False):
         raise Exception(f"Failed to add {email} to addressbook {addressbook_id}: {response}")
-
+    
 @app.post("/subscribe/")
 async def subscribe(
     email: EmailStr = Form(...),
@@ -45,31 +45,31 @@ async def subscribe(
 
         add_to_addressbook(email, plan)
 
+        selected_template = 35175
+
+        variables = {
+            "email": email,
+            "plan": plan,
+        }
+
         loop = asyncio.get_event_loop()
-        confirmation_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <title>Subscription Confirmation</title>
-            </head>
-            <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                <h2>Thank You for Subscribing</h2>
-                <p>Hello,</p>
-                <p>We’re glad you’ve joined us! Your subscription (Plan {plan}) has been confirmed. You will receive your document soon.</p>
-                <p>Best regards,<br>The Team</p>
-                <p style="font-size: 12px; color: #666;">
-                    <a href="https://starzen.app/unsubscribe">Unsubscribe</a>
-                </p>
-            </body>
-            </html>
-        """
-        await loop.run_in_executor(executor, partial(send_email, to_email=email, subject="Subscription Confirmation", content=confirmation_content, attachment_path=None))
+        await loop.run_in_executor(
+            executor,
+            partial(
+                send_email,
+                to_email=email,
+                subject="Your Birth Chart is in Progress! Here’s What’s Next" if plan == "1" else "Your Soulmate Reading is in Progress! Here’s What’s Next",
+                template_id=selected_template if plan == "1" else 35180,
+                variables=variables,
+            )
+        )
 
-        countdown = 6
-        schedule_email_task.apply_async(args=[email, file_path], countdown=countdown)
+        schedule_email_task.apply_async(args=[email, file_path, plan], countdown=4)
 
-        return {"message": f"Subscribed {email} to plan {plan}, document in {countdown // 3600} hours"}
+        return {
+            "message": f"Email на {email} надіслано.",
+            "template_id": selected_template
+        }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Main error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Помилка: {str(e)}")

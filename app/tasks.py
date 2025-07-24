@@ -2,6 +2,7 @@ from celery import Celery
 from .email_utils import send_email
 from .config import REDIS_BROKER_URL
 import os
+import base64
 
 celery_app = Celery(
     "worker",
@@ -19,37 +20,18 @@ celery_app.conf.update(
 )
 
 @celery_app.task
-def schedule_email_task(email: str, file_path: str):
+def schedule_email_task(email: str, file_path: str, plan: str):
     try:
         file_path = os.path.abspath(file_path)
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Attachment not found: {file_path}")
-        print(f"Attachment found at: {file_path}")
-
         send_email(
             to_email=email,
-            subject="Your Document is Ready",
-            content="""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Your Document is Ready</title>
-                </head>
-                <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-                    <h2>Your Document is Ready</h2>
-                    <p>Hello,</p>
-                    <p>Your subscription document is attached. Thank you!</p>
-                    <p>Contact: <a href="mailto:support@starzen.app">support@starzen.app</a></p>
-                    <p style="font-size: 12px; color: #666;">
-                        <a href="https://starzen.app/unsubscribe">Unsubscribe</a>
-                    </p>
-                </body>
-                </html>
-            """,
+            subject="Your Birth Chart is Ready!" if plan == "1" else " Your Soulmate’s Identity is Ready!",
+            template_id=35178 if plan == "1" else 35183,
             attachment_path=file_path
         )
-        print(f"Email sent to {email}")
     except Exception as e:
         print(f"Error: {str(e)}")
         raise
+
