@@ -1,7 +1,7 @@
 import os
 import base64
 import requests
-import mimetypes
+import subprocess
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,6 +39,32 @@ def get_templates():
     return [{"id": tpl["real_id"], "name": tpl["name"]} for tpl in templates]
 
 
+def compress_pdf(input_path: str, output_path: str, quality: str = "/ebook"):
+    gs_command = [
+        "gs",
+        "-sDEVICE=pdfwrite",
+        "-dCompatibilityLevel=1.4",
+        "-dPDFSETTINGS=/screen",
+        "-dNOPAUSE",
+        "-dQUIET",
+        "-dBATCH",
+        "-dDetectDuplicateImages=true",
+        "-dCompressFonts=true",
+        "-dDownsampleColorImages=true",
+        "-dDownsampleGrayImages=true",
+        "-dDownsampleMonoImages=true",
+        "-dColorImageDownsampleType=/Bicubic",
+        "-dGrayImageDownsampleType=/Bicubic",
+        "-dMonoImageDownsampleType=/Subsample",
+        f"-sOutputFile={output_path}",
+        input_path
+    ]
+    try:
+        subprocess.run(gs_command, check=True)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Ghostscript compress error: {e}")
+
+
 def send_email(to_email: str, subject: str, template_id: int, variables: dict = None, attachment_path: str = None):
     token = get_access_token()
     headers = {
@@ -68,19 +94,32 @@ def send_email(to_email: str, subject: str, template_id: int, variables: dict = 
         try:
             if not os.path.isfile(attachment_path):
                 raise FileNotFoundError(f"Файл не знайдено: {attachment_path}")
-            with open(attachment_path, "rb") as f:
+            
+            original_size = os.path.getsize(attachment_path) / (1024 * 1024)  # Мб
+            print(f"Original PDF size: {original_size:.2f} MB")
+            
+            compressed_path = attachment_path.replace(".pdf", "_compressed.pdf")
+            compress_pdf(attachment_path, compressed_path, quality="/ebook")
+            
+            compressed_size = os.path.getsize(compressed_path) / (1024 * 1024)
+            print(f"Compressed PDF size after first pass: {compressed_size:.2f} MB")
+
+            if compressed_size > 1.3:
+                compress_pdf(attachment_path, compressed_path, quality="/screen")
+                compressed_size = os.path.getsize(compressed_path) / (1024 * 1024)
+                print(f"Compressed PDF size after second pass: {compressed_size:.2f} MB")
+
+            with open(compressed_path, "rb") as f:
                 file_bytes = f.read()
-            if len(file_bytes) == 0:
-                raise ValueError(f"Файл порожній: {attachment_path}")
 
             filename = os.path.basename(attachment_path)
             attachment_b64 = base64.b64encode(file_bytes).decode("utf-8")
-            file_size = len(file_bytes) / (1024 * 1024)
+
             email_data["email"]["attachments_binary"] = {
                 filename: attachment_b64
             }
         except Exception as e:
-            raise 
+            raise
 
 
     response = requests.post("https://api.sendpulse.com/smtp/emails", headers=headers, json=email_data)
