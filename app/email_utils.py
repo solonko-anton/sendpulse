@@ -65,27 +65,21 @@ def send_email(to_email: str, subject: str, template_id: int, variables: dict = 
     }
 
     if attachment_path:
-        print(f"Starting attachment processing: {attachment_path}")
         try:
             if not os.path.isfile(attachment_path):
                 raise FileNotFoundError(f"Файл не знайдено: {attachment_path}")
-            print(f"File exists: {attachment_path}")
             with open(attachment_path, "rb") as f:
                 file_bytes = f.read()
-            print(f"File bytes read, length: {len(file_bytes)}")
             if len(file_bytes) == 0:
                 raise ValueError(f"Файл порожній: {attachment_path}")
 
             filename = os.path.basename(attachment_path)
             attachment_b64 = base64.b64encode(file_bytes).decode("utf-8")
             file_size = len(file_bytes) / (1024 * 1024)
-            print(f"Attachment filename: {filename}, size: {file_size:.2f} MB")
             email_data["email"]["attachments_binary"] = {
                 filename: attachment_b64
             }
-            print(f"Attachment added to email_data: {email_data}")
         except Exception as e:
-            print(f"Error processing attachment: {str(e)}")
             raise 
 
 

@@ -32,6 +32,5 @@ def schedule_email_task(email: str, file_path: str, plan: str):
             attachment_path=file_path
         )
     except Exception as e:
-        print(f"Error: {str(e)}")
         raise
 
