@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads 
+      - ./app:/app/app
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    command: celery -A app.tasks worker --loglevel=info  
+    volumes:
+      - ./uploads:/app/uploads 
+      - ./app:/app/app
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A app.tasks beat --loglevel=info  
+    volumes:
+      - ./uploads:/app/uploads 
+      - ./app:/app/app
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    restart: always
+    ports:
+      - "6380:6379"
+
+volumes:
+  pgdata:
+  uploads: 

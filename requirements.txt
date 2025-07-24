@@ -1,0 +1,9 @@
+fastapi[standard]
+uvicorn
+asyncpg
+aiohttp
+python-dotenv
+celery[redis]
+requests
+fpdf
+pysendpulse
