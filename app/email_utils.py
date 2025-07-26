@@ -44,7 +44,7 @@ def compress_pdf(input_path: str, output_path: str, quality: str = "/ebook"):
         "gs",
         "-sDEVICE=pdfwrite",
         "-dCompatibilityLevel=1.4",
-        "-dPDFSETTINGS=/screen",
+        f"-dPDFSETTINGS={quality}",
         "-dNOPAUSE",
         "-dQUIET",
         "-dBATCH",
