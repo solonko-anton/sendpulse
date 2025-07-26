@@ -41,23 +41,25 @@ def get_templates():
 
 def compress_pdf(input_path: str, output_path: str, quality: str = "/ebook"):
     gs_command = [
-        "gs",
-        "-sDEVICE=pdfwrite",
-        "-dCompatibilityLevel=1.4",
-        f"-dPDFSETTINGS={quality}",
-        "-dNOPAUSE",
-        "-dQUIET",
-        "-dBATCH",
-        "-dDetectDuplicateImages=true",
-        "-dCompressFonts=true",
-        "-dDownsampleColorImages=true",
-        "-dDownsampleGrayImages=true",
-        "-dDownsampleMonoImages=true",
-        "-dColorImageDownsampleType=/Bicubic",
-        "-dGrayImageDownsampleType=/Bicubic",
-        "-dMonoImageDownsampleType=/Subsample",
-        f"-sOutputFile={output_path}",
-        input_path
+    "gs",
+    "-sDEVICE=pdfwrite",
+    "-dCompatibilityLevel=1.4",
+    "-dNOPAUSE",
+    "-dQUIET",
+    "-dBATCH",
+    "-dDetectDuplicateImages=true",
+    "-dCompressFonts=true",
+
+    "-dDownsampleColorImages=true",
+    "-dColorImageDownsampleType=/Bicubic",
+    "-dColorImageResolution=105",
+
+    "-dDownsampleGrayImages=true",
+    "-dGrayImageDownsampleType=/Bicubic",
+    "-dGrayImageResolution=120",  
+
+    f"-sOutputFile={output_path}",
+    input_path,
     ]
     try:
         subprocess.run(gs_command, check=True)
