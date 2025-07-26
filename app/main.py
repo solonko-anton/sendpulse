@@ -39,7 +39,7 @@ async def subscribe(
 ):
     try:
         os.makedirs("uploads", exist_ok=True)
-        file_path = f"uploads/{email}_{file.filename}"
+        file_path = f"uploads/{email}_pdf_gift"
         with open(file_path, "wb") as f:
             f.write(await file.read())
 
