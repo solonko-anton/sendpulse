@@ -64,7 +64,7 @@ async def subscribe(
             )
         )
 
-        schedule_email_task.apply_async(args=[email, file_path, plan], countdown=10)
+        schedule_email_task.apply_async(args=[email, file_path, plan], countdown=86400)
 
         return {
             "message": f"Email на {email} надіслано.",
