@@ -95,7 +95,7 @@ def send_email(to_email: str, subject: str, template_id: int, variables: dict = 
             print(f"Original PDF size: {original_size:.2f} MB")
             compressed_path = attachment_path.replace(".pdf", "_compressed.pdf")
 
-            if original_size > 1:
+            if original_size > 0.75:
                 compress_pdf(attachment_path, compressed_path)
 
             compressed_size = os.path.getsize(compressed_path) / (1024 * 1024)
