@@ -1,6 +1,7 @@
 import os
 import base64
 import requests
+import os
 import subprocess
 from dotenv import load_dotenv
 
@@ -39,33 +40,26 @@ def get_templates():
     return [{"id": tpl["real_id"], "name": tpl["name"]} for tpl in templates]
 
 
-def compress_pdf(input_path: str, output_path: str, quality: str = "/ebook"):
-    gs_command = [
-    "gs",
-    "-sDEVICE=pdfwrite",
-    "-dCompatibilityLevel=1.4",
-    "-dNOPAUSE",
-    "-dQUIET",
-    "-dBATCH",
-    "-dDetectDuplicateImages=true",
-    "-dCompressFonts=true",
+def compress_pdf(input_path, output_path, target_size_mb=0.95):
 
-    "-dDownsampleColorImages=true",
-    "-dColorImageDownsampleType=/Bicubic",
-    "-dColorImageResolution=105",
-
-    "-dDownsampleGrayImages=true",
-    "-dGrayImageDownsampleType=/Bicubic",
-    "-dGrayImageResolution=120",  
-
-    f"-sOutputFile={output_path}",
-    input_path,
-    ]
     try:
-        subprocess.run(gs_command, check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Ghostscript compress error: {e}")
+        gs_command = [
+            "gs",
+            "-sDEVICE=pdfwrite",
+            "-dCompatibilityLevel=1.4",
+            "-dPDFSETTINGS=/prepress",  
+            "-dNOPAUSE",
+            "-dQUIET",
+            "-dBATCH",
+            f"-sOutputFile={output_path}",
+            input_path
+        ]
 
+        subprocess.run(gs_command, check=True)
+
+    except Exception as e:
+        print(f"Ошибка при сжатии: {e}")
+        return False
 
 def send_email(to_email: str, subject: str, template_id: int, variables: dict = None, attachment_path: str = None):
     token = get_access_token()
@@ -99,17 +93,13 @@ def send_email(to_email: str, subject: str, template_id: int, variables: dict = 
             
             original_size = os.path.getsize(attachment_path) / (1024 * 1024)  # Мб
             print(f"Original PDF size: {original_size:.2f} MB")
-            
             compressed_path = attachment_path.replace(".pdf", "_compressed.pdf")
-            compress_pdf(attachment_path, compressed_path, quality="/ebook")
-            
+
+            if original_size > 1:
+                compress_pdf(attachment_path, compressed_path)
+
             compressed_size = os.path.getsize(compressed_path) / (1024 * 1024)
             print(f"Compressed PDF size after first pass: {compressed_size:.2f} MB")
-
-            if compressed_size > 1.3:
-                compress_pdf(attachment_path, compressed_path, quality="/screen")
-                compressed_size = os.path.getsize(compressed_path) / (1024 * 1024)
-                print(f"Compressed PDF size after second pass: {compressed_size:.2f} MB")
 
             with open(compressed_path, "rb") as f:
                 file_bytes = f.read()
